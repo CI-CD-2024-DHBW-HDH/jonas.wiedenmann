@@ -61,3 +61,40 @@ jobs:
           push: true
           tags: |
             "ghcr.io/ci-cd-2024-dhbw-hdh/jonas.wiedenmann:latest"
+
+  deploy-k8:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+      packages: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - uses: azure/setup-kubectl@v2.0
+
+      - uses: Azure/k8s-set-context@v2
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: create image registry secret for kubernetes
+        uses: Azure/k8s-create-secret@v1.1
+        with:
+          namespace: jonas-wiedenmann
+          container-registry-url: ghcr.io
+          container-registry-username: ${{ github.actor }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          secret-name: regcred
+
+      - name: deploy deployment and service
+        uses: Azure/k8s-deploy@v4
+        with:
+          namespace: jonas-wiedenmann
+          manifests: |
+            kubernetes/deployment.yaml
+            kubernetes/service.yaml
+          imagepullsecrets: |
+            regcred
