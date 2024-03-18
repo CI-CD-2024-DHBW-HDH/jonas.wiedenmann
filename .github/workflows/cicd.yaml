@@ -80,6 +80,9 @@ jobs:
         with:
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+      - name: Create namespace
+        run: kubectl create namespace jonas-wiedenmann --dry-run=client -o yaml | kubectl apply -f -
+
       - name: create image registry secret for kubernetes
         uses: Azure/k8s-create-secret@v1.1
         with:
